@@ -19,10 +19,8 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  COVERAGE: 'true'
-
 jobs:
+
   linting:
     runs-on: ubuntu-latest
 
@@ -33,10 +31,10 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install linters
-        bash: |
+        run: |
           pip install black==25.1.0
       - name: Run black
-        bash: |
+        run: |
           black --check --diff .
 
   testing:
@@ -46,28 +44,22 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        name: [default]
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        PYTHON_VERSION: ["3.9", "3.10", "3.11", "3.12", "3.13"]
         include:
 
-          - name: windows-py313
+          - name: windows-py311
             os: windows-latest
-            PYTHON_VERSION: "3.13"
+            PYTHON_VERSION: "3.11"
           - name: windows-py39
             os: windows-latest
             PYTHON_VERSION: "3.9"
 
-          - name: macos-py313
+          - name: macos-py311
             os: macos-latest
-            PYTHON_VERSION: "3.13"
+            PYTHON_VERSION: "3.11"
           - name: macos-py39
             os: macos-latest
             PYTHON_VERSION: "3.9"
 
-          - name: linux-py313
-            os: ubuntu-latest
-            PYTHON_VERSION: "3.13"
           - name: linux-py311
             os: ubuntu-latest
             PYTHON_VERSION: "3.11"
@@ -82,7 +74,7 @@ jobs:
           - name: linux-py39
             os: ubuntu-latest
             PYTHON_VERSION: "3.9"
-            # Do not install psutil on Python 3.8 to have some CI runs that
+            # Do not install psutil on Python 3.9 to have some CI runs that
             # tests that loky has no hard dependency on psutil.
             NO_PSUTIL: "true"
 

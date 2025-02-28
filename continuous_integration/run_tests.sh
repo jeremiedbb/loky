@@ -16,6 +16,8 @@ python -c "import os; print('os.cpu_count():', os.cpu_count())"
 if [[ "$JOBLIB_TESTS" == "true" ]]; then
     # Install joblib from pip, patch it to use this version of loky
     # and run the joblib tests with pytest.
+    LOKY_PATH=$(pwd)
+
     git clone https://github.com/joblib/joblib.git src_joblib
     cd src_joblib
     pip install "pytest<7.0"  # Need to update remove occurrences of pytest.warns(None)
@@ -23,8 +25,8 @@ if [[ "$JOBLIB_TESTS" == "true" ]]; then
 
     pip install -e .
     export JOBLIB=`python -c "import joblib; print(joblib.__path__[0])"`
-    cp "$BUILD_SOURCESDIRECTORY"/continuous_integration/copy_loky.sh $JOBLIB/externals
-    (cd $JOBLIB/externals && bash copy_loky.sh "$BUILD_SOURCESDIRECTORY")
+    cp "$LOKY_PATH"/continuous_integration/copy_loky.sh $JOBLIB/externals
+    (cd $JOBLIB/externals && bash copy_loky.sh "$LOKY_PATH")
     pytest -vl --ignore $JOBLIB/externals --pyargs joblib
 else
     # Make sure that we have the python docker image cached locally to avoid
@@ -36,11 +38,16 @@ else
     # Enable coverage reporting from subprocesses.
     python continuous_integration/install_coverage_subprocess_pth.py
 
+    PYTEST_ARGS="-vl --timeout=120 --maxfail=5 --cov=loky --cov-report xml"
+
     # Run the tests and collect trace coverage data both in the subprocesses
     # and its subprocesses.
     if [[ "$RUN_MEMORY" != "true" ]]; then
-        EXTRA_PYTEST_ARGS = "--skip-high-memory"
+        PYTEST_ARGS="$PYTEST_ARGS --skip-high-memory"
     fi
 
-    pytest loky -vl --timeout=120 --maxfail=5 ${EXTRA_PYTEST_ARGS} --cov=loky --cov-report xml
+    LOKY_MAX_DEPTH=3
+    OMP_NUM_THREADS=4
+
+    pytest $PYTEST_ARGS .
 fi
